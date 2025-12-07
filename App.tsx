@@ -94,6 +94,9 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>('light');
 
   const results = useMemo(() => calculateResults(inputs), [inputs]);
+  const lastUpdated = useMemo(() => {
+    return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z/, ' UTC');
+  }, []);
 
   // Apply Theme Effect
   useEffect(() => {
@@ -221,6 +224,7 @@ export default function App() {
              <div className="text-center text-xs text-slate-400 space-y-1">
                 <p className="font-medium text-slate-500 dark:text-slate-500">made by mopko</p>
                 <p>power by cloudflare · codex · gemini</p>
+                <p className="text-slate-500 dark:text-slate-500">Last updated: {lastUpdated}</p>
              </div>
           </div>
         </div>
