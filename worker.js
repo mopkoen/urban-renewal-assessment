@@ -1,38 +1,64 @@
 // Cloudflare Worker to serve static files for React SPA
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    const pathname = url.pathname;
+    try {
+      const url = new URL(request.url);
+      const pathname = url.pathname;
 
-    // Try to get the file from the site bucket
-    let file = await env.ASSETS.fetch(request);
-    let response = new Response(file.body, file);
+      // Handle OPTIONS request for CORS
+      if (request.method === 'OPTIONS') {
+        return new Response(null, {
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        });
+      }
 
-    // If the file doesn't exist and it's not a file request (no extension),
-    // serve index.html for SPA routing
-    if (response.status === 404 && !pathname.includes('.')) {
-      const indexRequest = new Request(new URL('/index.html', request.url));
-      response = await env.ASSETS.fetch(indexRequest);
+      // Check if ASSETS binding exists
+      if (!env.ASSETS) {
+        return new Response('ASSETS binding not configured', { status: 500 });
+      }
+
+      // Try to get the file from the site bucket
+      let response = await env.ASSETS.fetch(request);
+
+      // If the file doesn't exist and it's not a file request (no extension),
+      // serve index.html for SPA routing
+      if (response.status === 404 && !pathname.includes('.')) {
+        const indexRequest = new Request(new URL('/index.html', request.url));
+        response = await env.ASSETS.fetch(indexRequest);
+      }
+
+      // Clone response to modify headers
+      const headers = new Headers(response.headers);
+      
+      // Set proper content types
+      const contentType = getContentType(pathname);
+      if (contentType) {
+        headers.set('Content-Type', contentType);
+      }
+      
+      // Add CORS headers
+      headers.set('Access-Control-Allow-Origin', '*');
+      headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      headers.set('Access-Control-Allow-Headers', 'Content-Type');
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: headers,
+      });
+    } catch (error) {
+      // Return error response
+      return new Response(`Worker Error: ${error.message}`, {
+        status: 500,
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+      });
     }
-
-    // Set proper content types and CORS headers
-    const contentType = getContentType(pathname);
-    const headers = new Headers(response.headers);
-    
-    if (contentType) {
-      headers.set('Content-Type', contentType);
-    }
-    
-    // Add CORS headers
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    headers.set('Access-Control-Allow-Headers', 'Content-Type');
-
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: headers,
-    });
   },
 };
 
