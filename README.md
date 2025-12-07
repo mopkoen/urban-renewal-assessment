@@ -1,54 +1,599 @@
 # ProRebuild System / 都更重建試算工具
 
+> **⚠️ 重要聲明 / Important Notice**  
 > Educational / learning use only. Not financial, legal, or architectural advice.  
 > 僅供教學與學習使用，非財務、法律或建築專業建議。
 
-## Overview / 專案概要
-- React + TypeScript calculator for urban renewal/rebuild feasibility with real-time outputs.  
-- 支援地籍、容積、成本、銷售假設的即時試算。
+## 📋 目錄 / Table of Contents
 
-## Key Features / 主要功能
-- Guided inputs for land basics, FAR/coverage, exemptions (mech/stair/balcony/roof), cost and sales/return settings.  
-- 引導式輸入：基地、建蔽/容積、免計容（機電/樓梯/陽台/屋突）、成本與銷售/分回。
-- Live results: area breakdown, sales efficiency, cost distribution, revenue, equity, with detail modal.  
-- 即時計算：面積拆解、銷售效率、成本分布、收入與權利分配，附明細彈窗。
-- i18n (zh-TW/zh-CN/en), light/dark themes, mobile-friendly layout, demo dataset.  
-- 多語系、明暗主題、行動友善，附示範資料。
+- [專案概述 / Overview](#專案概述--overview)
+- [主要功能 / Key Features](#主要功能--key-features)
+- [技術棧 / Tech Stack](#技術棧--tech-stack)
+- [專案結構 / Project Structure](#專案結構--project-structure)
+- [核心計算邏輯 / Key Calculations](#核心計算邏輯--key-calculations)
+- [快速開始 / Getting Started](#快速開始--getting-started)
+- [開發指南 / Development Guide](#開發指南--development-guide)
+- [部署指南 / Deployment Guide](#部署指南--deployment-guide)
+- [環境變數 / Environment Variables](#環境變數--environment-variables)
+- [常見問題 / FAQ](#常見問題--faq)
+- [授權 / License](#授權--license)
 
-## Tech Stack / 技術棧
-- React 19, TypeScript, Vite 6
-- Tailwind CSS (CDN), Heroicons, Recharts
+---
 
-## Project Structure / 專案結構
-- `index.tsx` app entry; `App.tsx` tabs and inputs.  
-- `components/` shared UI (`InputField`, `ResultsDashboard`).  
-- `utils/` business logic (`calculations.ts`) and i18n dictionary (`i18n.ts`).  
-- `types.ts` shared types/enums.  
-- `public/` static assets; `dist/` build output (do not edit manually).  
+## 📖 專案概述 / Overview
 
-## Key Calculations (overview) / 核心計算概要
-- Areas: max build area = site area * coverage; legal FAR = site area * FAR; bonus FAR = 50% legal; exemptions (mech/stair/balcony) capped to legal FAR; roof cap by layer; basement from excavation ratio and layers.
-- Sales: basement excluded from saleable; parking from 65% basement ping and `parkSize`; 1F share 65% when multi-story; land efficiency = saleable / site ping.
-- Costs: build cost per ping; legal cost per legal m²; design/fund/license/review/bonus/pipes/cadastral/rights/stamp/trust; interest from build cost and loan years; management (HR/sales/risk) 5% each.
-- Revenue & Equity: parking + 1F price + upper price; cash back from selling parks/upper floors; return area after public ratio; exchange ratio vs original indoor ping.
+ProRebuild 是一個基於 React + TypeScript 開發的都更危老重建評估系統，提供即時試算功能，幫助使用者評估都市更新和危老重建專案的可行性。系統支援地籍資訊、容積率、建蔽率、成本參數、銷售假設等多項輸入，並即時計算面積拆解、銷售效率、成本分布、收入與權利分配等關鍵指標。
 
-## Getting Started / 快速開始
-Prerequisites / 需求：Node.js
+ProRebuild is a React + TypeScript-based urban renewal and old building reconstruction assessment system that provides real-time calculation capabilities to help users evaluate the feasibility of urban renewal and old building reconstruction projects. The system supports multiple inputs including cadastral information, floor area ratio (FAR), building coverage ratio, cost parameters, and sales assumptions, and calculates key metrics such as area breakdown, sales efficiency, cost distribution, revenue, and equity allocation in real-time.
 
-1) Install deps 安裝依賴：`npm install`  
-2) Set `GEMINI_API_KEY` in `.env.local` (gitignored) 設定環境變數。  
-3) Run dev server 啟動開發伺服器：`npm run dev` (http://localhost:5173)
+### 主要用途 / Primary Use Cases
 
-## Commands / 指令
-- `npm run dev` — start dev server / 開發伺服器
-- `npm run build` — production build to `dist/` / 正式版建置
-- `npm run preview` — serve the build locally / 本地預覽
+- **都更專案評估** / Urban Renewal Project Assessment
+- **危老重建分析** / Old Building Reconstruction Analysis
+- **財務可行性分析** / Financial Feasibility Analysis
+- **權利分配試算** / Equity Allocation Calculation
+- **成本效益評估** / Cost-Benefit Evaluation
 
-## Environment / 環境
-- `.env.local` for secrets (e.g., `GEMINI_API_KEY`), gitignored.  
-- 機密變數請放 `.env.local`，已加入 gitignore。
+---
 
-## Conventions / 注意事項
-- Add new fields by extending `InputState` / `TabCategory` in `types.ts`, and sync keys in `utils/i18n.ts`.  
-- 若新增欄位，請更新 `types.ts` 並補齊 `utils/i18n.ts`。  
-- Do not edit `dist/` by hand / 請勿手動修改 `dist/`。 
+## ✨ 主要功能 / Key Features
+
+### 1. 引導式輸入介面 / Guided Input Interface
+
+系統將輸入參數分為四個主要類別，提供清晰的引導式輸入體驗：
+
+#### 📍 基本資訊 (BASIC)
+- **地籍資訊**：地號、地段、使用分區
+- **基地參數**：基地面積、建蔽率、容積率、開挖率
+- **建築規劃**：預估地上層數、地下層數、屋突層數、預估樓高、最大路寬
+
+#### 📐 法規參數 (REGULATIONS)
+- **免計容積上限**：機電上限、梯廳上限、陽台上限、單層屋突上限
+- 所有免計容積項目均受法定容積率上限限制
+
+#### 💰 成本參數 (COSTS)
+- **營建成本**：營建成本（元/坪）、法定工程造價（元/㎡）
+- **規費設定**：都更規劃費、不動產估價費、土地鑑界費、鑽探費、鄰房鑑定費
+
+#### 🏠 銷售與權益 (SALES)
+- **公設與車位**：預估公設比、車位單位面積、預估車位單價
+- **售價預估**：一樓單價、二樓以上單價
+- **分回條件**：更新前原室內坪數、更新後總戶數、地主人數、銷售面積百分比
+
+### 2. 即時計算結果 / Real-Time Calculation Results
+
+#### 📊 面積拆解 (Area Breakdown)
+- 最大建築面積、法定容積、獎勵容積
+- 機電、梯廳、陽台、屋突面積
+- 開挖面積、地下室面積
+- 總坪數、總平方公尺
+
+#### 💵 銷售分析 (Sales Analysis)
+- 車位面積、總車位數
+- 一樓銷售面積、二樓以上銷售面積、剩餘面積
+- 總銷售坪數、土地效率
+
+#### 💸 成本分析 (Cost Analysis)
+- 重建成本、設計費、貸款利息
+- 管理費（人事、銷售、風險各 5%）
+- 其他費用明細（基金、許可費、審查費、獎勵申請費、管線費、地籍費、權利費、印花稅、信託費）
+- 總成本、共同負擔比例
+
+#### 💰 收入分析 (Revenue Analysis)
+- 車位收入、一樓收入、二樓以上收入
+- 總收入
+
+#### ⚖️ 權利分配 (Equity Allocation)
+- 銷售車位數、銷售二樓以上坪數
+- 現金回饋、分回室內坪數
+- 坪數交換比、分回比例
+- 貸款年期
+
+### 3. 視覺化圖表 / Visualization Charts
+
+- **成本分布圓餅圖**：直觀展示各項成本占比
+- **詳細成本明細彈窗**：點擊查看完整成本拆解
+- **響應式設計**：適配桌面和行動裝置
+
+### 4. 多語系支援 / Internationalization (i18n)
+
+- **繁體中文** (zh-TW)
+- **简体中文** (zh-CN)
+- **English** (en)
+
+### 5. 主題切換 / Theme Switching
+
+- **淺色主題** (Light Mode)
+- **深色主題** (Dark Mode)
+- 自動保存主題偏好
+
+### 6. 示範資料 / Demo Dataset
+
+提供預設的示範資料，方便快速測試和學習系統功能。
+
+---
+
+## 🛠 技術棧 / Tech Stack
+
+### 核心框架 / Core Framework
+- **React 19** - 使用者介面框架
+- **TypeScript 5.8** - 型別安全的 JavaScript
+- **Vite 6** - 快速的前端建置工具
+
+### UI 框架與樣式 / UI Framework & Styling
+- **Tailwind CSS** (CDN) - 實用優先的 CSS 框架
+- **Heroicons** - 精美的 SVG 圖示庫
+- **Recharts** - React 圖表庫
+
+### 開發工具 / Development Tools
+- **@vitejs/plugin-react** - Vite React 插件
+- **@types/node** - Node.js 型別定義
+
+### 部署平台 / Deployment Platforms
+- **Cloudflare Workers** - 邊緣運算平台
+- **GitHub Pages** - 靜態網站託管
+- **Wrangler** - Cloudflare Workers 部署工具
+
+---
+
+## 📁 專案結構 / Project Structure
+
+```
+prorebuild/
+├── index.html              # HTML 入口檔案
+├── index.tsx               # React 應用程式入口點
+├── index.css               # 全域樣式
+├── App.tsx                 # 主應用程式元件（標籤頁和輸入表單）
+├── types.ts                # TypeScript 型別定義和列舉
+│
+├── components/             # 可重用 UI 元件
+│   ├── InputField.tsx      # 輸入欄位元件
+│   └── ResultsDashboard.tsx # 結果儀表板元件
+│
+├── utils/                  # 工具函數和業務邏輯
+│   ├── calculations.ts     # 核心計算邏輯
+│   └── i18n.ts            # 多語系翻譯字典
+│
+├── public/                 # 靜態資源
+│   └── _redirects         # 重定向規則（用於 SPA）
+│
+├── docs/                   # 專案文檔
+│   ├── README.md          # 文檔索引
+│   ├── 01-專案概述.md
+│   ├── 02-專案結構.md
+│   ├── 03-入口檔案.md
+│   ├── 04-主應用程式.md
+│   ├── 05-類型定義.md
+│   └── 06-計算邏輯.md
+│
+├── dist/                   # 建置輸出目錄（請勿手動編輯）
+│
+├── worker.js               # Cloudflare Worker 腳本
+├── wrangler.toml           # Cloudflare Workers 配置檔案
+├── vite.config.ts          # Vite 建置配置
+├── tsconfig.json           # TypeScript 配置
+├── package.json            # 專案依賴和腳本
+│
+└── .github/
+    └── workflows/
+        └── deploy-pages.yml # GitHub Pages 自動部署工作流
+```
+
+### 檔案說明 / File Descriptions
+
+- **`index.tsx`**: React 應用程式的入口點，負責掛載根元件
+- **`App.tsx`**: 主應用程式元件，包含標籤頁切換、輸入表單、結果顯示和設定選單
+- **`types.ts`**: 定義所有共享的 TypeScript 型別、介面和列舉
+- **`components/InputField.tsx`**: 可重用的輸入欄位元件，支援文字和數字輸入
+- **`components/ResultsDashboard.tsx`**: 結果儀表板元件，顯示計算結果、圖表和詳細資訊
+- **`utils/calculations.ts`**: 核心計算邏輯，包含所有業務計算函數
+- **`utils/i18n.ts`**: 多語系翻譯字典，支援三種語言
+- **`worker.js`**: Cloudflare Worker 腳本，用於服務靜態檔案和處理 SPA 路由
+- **`wrangler.toml`**: Cloudflare Workers 配置檔案
+
+---
+
+## 🧮 核心計算邏輯 / Key Calculations
+
+### 面積計算 / Area Calculations
+
+#### 最大建築面積 (Max Build Area)
+```
+最大建築面積 = 基地面積 × 建蔽率
+```
+
+#### 法定容積 (Legal FAR)
+```
+法定容積 = 基地面積 × 容積率
+```
+
+#### 獎勵容積 (Bonus FAR)
+```
+獎勵容積 = 法定容積 × 50%
+```
+
+#### 免計容積 (Exemptions)
+- **機電面積** = 法定容積 × 機電上限（受法定容積上限限制）
+- **梯廳面積** = 法定容積 × 梯廳上限（受法定容積上限限制）
+- **陽台面積** = 法定容積 × 陽台上限（受法定容積上限限制）
+- **屋突面積** = 法定容積 × 屋突上限 × 屋突層數（受法定容積上限限制）
+
+#### 地下室面積 (Basement Area)
+```
+地下室面積 = 基地面積 × 開挖率 × 地下層數
+```
+
+### 銷售計算 / Sales Calculations
+
+#### 車位計算 (Parking)
+```
+車位面積 = 地下室面積 × 65% × 車位單位面積
+總車位數 = 車位面積 / 車位單位面積
+```
+
+#### 銷售面積 (Saleable Area)
+- **一樓銷售面積**：多層建築時，一樓佔總銷售面積的 65%
+- **二樓以上銷售面積**：剩餘的銷售面積
+- **總銷售坪數**：排除地下室後的總坪數
+
+#### 土地效率 (Land Efficiency)
+```
+土地效率 = 總銷售坪數 / 基地坪數
+```
+
+### 成本計算 / Cost Calculations
+
+#### 重建成本 (Rebuild Cost)
+```
+重建成本 = 總坪數 × 營建成本（元/坪）
+```
+
+#### 法定工程造價 (Legal Cost)
+```
+法定工程造價 = 法定容積 × 法定工程造價（元/㎡）
+```
+
+#### 設計費 (Design Fee)
+```
+設計費 = 重建成本 × 3%
+```
+
+#### 貸款利息 (Loan Interest)
+```
+貸款利息 = 重建成本 × 貸款利率 × 貸款年期
+```
+
+#### 管理費 (Management Fees)
+- **人事管理費** = 重建成本 × 5%
+- **銷售管理費** = 重建成本 × 5%
+- **風險管理費** = 重建成本 × 5%
+- **總管理費** = 人事 + 銷售 + 風險
+
+#### 其他費用 (Other Fees)
+- 基金、許可費、審查費、獎勵申請費
+- 管線費、地籍費、權利費
+- 印花稅、信託費
+- 規費（都更規劃費、不動產估價費、土地鑑界費、鑽探費、鄰房鑑定費）
+
+#### 總成本 (Total Cost)
+```
+總成本 = 重建成本 + 設計費 + 貸款利息 + 總管理費 + 其他費用 + 規費
+```
+
+### 收入計算 / Revenue Calculations
+
+```
+車位收入 = 銷售車位數 × 車位單價
+一樓收入 = 一樓銷售面積 × 一樓單價
+二樓以上收入 = 二樓以上銷售面積 × 二樓以上單價
+總收入 = 車位收入 + 一樓收入 + 二樓以上收入
+```
+
+### 權利分配計算 / Equity Allocation Calculations
+
+#### 現金回饋 (Cash Back)
+```
+現金回饋 = 車位收入 + 二樓以上收入 × 銷售面積百分比
+```
+
+#### 分回室內坪數 (Return Indoor Area)
+```
+分回室內坪數 = (總坪數 - 銷售面積) × (1 - 公設比)
+```
+
+#### 坪數交換比 (Ping Exchange Ratio)
+```
+坪數交換比 = 分回室內坪數 / 更新前原室內坪數
+```
+
+#### 分回比例 (Return Ratio)
+```
+分回比例 = 分回室內坪數 / 更新前原室內坪數 × 100%
+```
+
+---
+
+## 🚀 快速開始 / Getting Started
+
+### 系統需求 / Prerequisites
+
+- **Node.js 18+** (建議使用 nvm 安裝：`nvm install 18 && nvm use 18`)
+- **npm** (隨 Node.js 附帶)
+
+### 安裝步驟 / Installation Steps
+
+#### 1. 克隆專案 / Clone Repository
+
+```bash
+git clone https://github.com/mopkoen/urban-renewal-assessment.git
+cd urban-renewal-assessment
+```
+
+#### 2. 安裝依賴 / Install Dependencies
+
+```bash
+npm install
+```
+
+#### 3. 配置環境變數 / Configure Environment Variables
+
+在專案根目錄創建 `.env.local` 檔案（此檔案已被 gitignore）：
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+> **注意**：目前專案中 GEMINI_API_KEY 為可選項，如果不需要 AI 功能可以省略。
+
+#### 4. 啟動開發伺服器 / Start Development Server
+
+```bash
+npm run dev
+```
+
+開發伺服器將在 http://localhost:5173 啟動。
+
+#### 5. 建置正式版 / Build for Production
+
+```bash
+npm run build
+```
+
+建置輸出將生成在 `dist/` 目錄。
+
+#### 6. 預覽建置結果 / Preview Build
+
+```bash
+npm run preview
+```
+
+---
+
+## 💻 開發指南 / Development Guide
+
+### 可用指令 / Available Commands
+
+| 指令 | 說明 |
+|------|------|
+| `npm run dev` | 啟動開發伺服器（http://localhost:5173） |
+| `npm run build` | 建置正式版到 `dist/` 目錄 |
+| `npm run preview` | 本地預覽建置結果 |
+| `npm run deploy:worker` | 建置並部署到 Cloudflare Workers |
+| `npm run deploy:pages` | 建置並部署到 Cloudflare Pages |
+| `npm run deploy` | 預設部署到 Cloudflare Workers |
+
+### 新增功能 / Adding New Features
+
+#### 新增輸入欄位 / Adding New Input Fields
+
+1. **更新型別定義** (`types.ts`)
+   - 在 `InputState` 介面中新增欄位
+   - 在 `TabCategory` 列舉中新增標籤（如需要）
+
+2. **更新多語系** (`utils/i18n.ts`)
+   - 在對應的語言區塊中新增翻譯鍵值
+
+3. **更新計算邏輯** (`utils/calculations.ts`)
+   - 在 `calculateResults` 函數中使用新欄位進行計算
+
+4. **更新 UI** (`App.tsx`)
+   - 在對應的標籤頁中新增 `InputField` 元件
+
+#### 新增語言 / Adding New Language
+
+1. 在 `types.ts` 中更新 `Language` 型別
+2. 在 `utils/i18n.ts` 中新增語言區塊
+3. 在 `App.tsx` 中更新語言選擇器
+
+### 程式碼風格 / Code Style
+
+- **縮排**：2 個空格
+- **引號**：單引號
+- **分號**：使用分號
+- **命名**：
+  - 變數和函數：camelCase
+  - 元件：PascalCase
+  - 常數：UPPER_SNAKE_CASE
+
+### 型別安全 / Type Safety
+
+- 所有函數參數和返回值都應該有明確的型別定義
+- 使用 TypeScript 的嚴格模式
+- 避免使用 `any` 型別
+
+---
+
+## 🚢 部署指南 / Deployment Guide
+
+### Cloudflare Workers 部署 / Cloudflare Workers Deployment
+
+#### 1. 安裝 Wrangler CLI
+
+```bash
+npm install -D wrangler
+```
+
+#### 2. 登入 Cloudflare
+
+```bash
+npx wrangler login
+```
+
+#### 3. 配置 `wrangler.toml`
+
+專案已包含 `wrangler.toml` 配置檔案：
+
+```toml
+name = "prorebuild"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+```
+
+#### 4. 部署
+
+```bash
+npm run deploy:worker
+```
+
+或
+
+```bash
+npm run build
+npx wrangler deploy
+```
+
+#### 5. 訪問部署連結
+
+部署成功後，您將獲得一個 Workers 連結，例如：
+```
+https://prorebuild.mopko5696.workers.dev
+```
+
+### GitHub Pages 部署 / GitHub Pages Deployment
+
+#### 1. 啟用 GitHub Pages
+
+1. 前往 GitHub 倉庫的 **Settings** → **Pages**
+2. 在 **Source** 中選擇 **GitHub Actions**
+
+#### 2. 自動部署
+
+專案已包含 `.github/workflows/deploy-pages.yml` 工作流檔案。當您推送代碼到 `main` 分支時，GitHub Actions 會自動：
+
+1. 安裝依賴
+2. 建置專案
+3. 部署到 GitHub Pages
+
+#### 3. 訪問 GitHub Pages
+
+部署完成後，您的網站將在以下網址可用：
+```
+https://mopkoen.github.io/urban-renewal-assessment
+```
+
+### 手動部署 / Manual Deployment
+
+如果需要手動部署到 GitHub Pages：
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name=prorebuild
+```
+
+---
+
+## 🔐 環境變數 / Environment Variables
+
+### `.env.local`
+
+此檔案用於存放本地開發環境的機密變數，已被 `.gitignore` 排除。
+
+#### 可用變數
+
+| 變數名稱 | 說明 | 是否必填 |
+|---------|------|---------|
+| `GEMINI_API_KEY` | Google Gemini API 金鑰 | 否（目前未使用） |
+
+### 範例 / Example
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+---
+
+## ❓ 常見問題 / FAQ
+
+### Q: 為什麼頁面顯示空白？
+
+A: 請檢查以下項目：
+1. 確認 `index.html` 中包含 `<script type="module" src="/index.tsx"></script>`
+2. 確認建置成功且 `dist/` 目錄中有檔案
+3. 檢查瀏覽器控制台是否有錯誤訊息
+4. 清除瀏覽器快取後重新載入
+
+### Q: 如何更新 Cloudflare Workers？
+
+A: 執行 `npm run deploy:worker` 或 `npm run deploy` 即可更新。
+
+### Q: 如何更新 GitHub Pages？
+
+A: 推送代碼到 `main` 分支，GitHub Actions 會自動部署。
+
+### Q: 計算結果不正確怎麼辦？
+
+A: 請檢查：
+1. 輸入參數是否正確
+2. 計算邏輯是否符合您的需求（參考 `utils/calculations.ts`）
+3. 單位是否一致（坪 vs 平方公尺）
+
+### Q: 如何新增新的計算項目？
+
+A: 參考 [開發指南](#開發指南--development-guide) 中的「新增功能」章節。
+
+### Q: 支援哪些瀏覽器？
+
+A: 支援所有現代瀏覽器（Chrome、Firefox、Safari、Edge），建議使用最新版本。
+
+---
+
+## 📝 授權 / License
+
+本專案僅供教學與學習使用。
+
+This project is for educational and learning purposes only.
+
+---
+
+## 🤝 貢獻 / Contributing
+
+歡迎提交 Issue 和 Pull Request！
+
+歡迎改進建議和錯誤回報。
+
+---
+
+## 📞 聯絡方式 / Contact
+
+如有問題或建議，請透過 GitHub Issues 聯繫。
+
+---
+
+## 📚 相關文檔 / Related Documentation
+
+詳細的技術文檔請參考 `docs/` 目錄：
+
+- [專案概述](docs/01-專案概述.md)
+- [專案結構](docs/02-專案結構.md)
+- [入口檔案](docs/03-入口檔案.md)
+- [主應用程式](docs/04-主應用程式.md)
+- [類型定義](docs/05-類型定義.md)
+- [計算邏輯](docs/06-計算邏輯.md)
+
+---
+
+**最後更新 / Last Updated**: 2025-12-07

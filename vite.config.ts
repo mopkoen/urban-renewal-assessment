@@ -4,8 +4,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    // For GitHub Pages, use repository name as base path
+    // For Cloudflare Workers, use root path
+    const base = process.env.GITHUB_ACTIONS ? '/urban-renewal-assessment/' : '/';
     return {
-      base: '/',
+      base: base,
       server: {
         port: 3000,
         host: '0.0.0.0',
