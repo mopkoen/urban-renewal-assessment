@@ -1,6 +1,11 @@
-﻿# ProRebuild System
+# ProRebuild System
 
 A React + TypeScript calculator for urban renewal/rebuild feasibility. Enter site, regulation, cost, and sales assumptions to get areas, revenue, costs, and equity splits in real time. This tool is for educational/learning purposes only and is not financial, legal, or architectural advice.
+
+## What’s inside
+- Rapid inputs for land basics, regulations, costs, and sales/return scenarios.
+- Real-time charts and a detail modal to explain cost makeup and area splits.
+- i18n (zh-TW/zh-CN/en), light/dark themes, and a demo dataset for quick trials.
 
 ## Features
 - Guided inputs: land basics, FAR/coverage, exemptions (mech/stair/balcony/roof), cost parameters, sales/return settings.
