@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && wrangler pages deploy dist"
+    "deploy:worker": "npm run build && wrangler deploy",
+    "deploy:pages": "npm run build && wrangler pages deploy dist",
+    "deploy": "npm run deploy:worker"
   },
   "dependencies": {
     "react": "^19.2.1",

@@ -15,19 +15,24 @@ export default {
       response = await env.ASSETS.fetch(indexRequest);
     }
 
-    // Set proper content types
+    // Set proper content types and CORS headers
     const contentType = getContentType(pathname);
+    const headers = new Headers(response.headers);
+    
     if (contentType) {
-      response = new Response(response.body, {
-        ...response,
-        headers: {
-          ...response.headers,
-          'Content-Type': contentType,
-        },
-      });
+      headers.set('Content-Type', contentType);
     }
+    
+    // Add CORS headers
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    headers.set('Access-Control-Allow-Headers', 'Content-Type');
 
-    return response;
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: headers,
+    });
   },
 };
 

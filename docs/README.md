@@ -1,56 +1,43 @@
-# 都更危老重建評估系統 Pro - 專案文檔
+﻿# ProRebuild System
 
-歡迎來到都更危老重建評估系統的完整技術文檔。本文檔詳細介紹了專案的每個部分、每個檔案的功能和實現細節。
+A React + TypeScript calculator for urban renewal/rebuild feasibility. Enter site, regulation, cost, and sales assumptions to get areas, revenue, costs, and equity splits in real time.
 
-## 📚 文檔目錄
+## Features
+- Guided inputs: land basics, FAR/coverage, exemptions (mech/stair/balcony/roof), cost parameters, sales/return settings.
+- Live results: area breakdown, sales efficiency, cost distribution, revenue, and equity metrics.
+- i18n (zh-TW/zh-CN/en), light/dark themes, and demo data for quick checks.
+- Charts plus detail modal for the cost breakdown; mobile-friendly layout.
 
-### 專案概述
-- [專案概述](./01-專案概述.md) - 專案簡介、技術棧、功能特色
+## Tech Stack
+- React 19, TypeScript, Vite 6.
+- Tailwind CSS (CDN), Heroicons, Recharts.
+- Cloudflare Pages + Wrangler for deployment.
 
-### 專案結構
-- [專案結構](./02-專案結構.md) - 目錄結構、檔案組織說明
+## Project Structure
+- index.tsx mounts the app; App.tsx holds tabs and inputs.
+- components/ shared UI (InputField, ResultsDashboard).
+- utils/ business logic (calculations.ts) and translations (i18n.ts).
+- types.ts shared types/enums.
+- public/ static assets; dist/ build output (do not edit manually).
+- Cloudflare config: worker.js, .wrangler/, wrangler.toml.
 
-### 核心檔案
-- [入口檔案](./03-入口檔案.md) - `index.tsx` 應用程式啟動點
-- [主應用程式](./04-主應用程式.md) - `App.tsx` 主組件與 UI 邏輯
-- [類型定義](./05-類型定義.md) - `types.ts` TypeScript 類型系統
+## Key Calculations (overview)
+- Areas: max build area = site area * coverage; legal FAR = site area * FAR; bonus FAR at 50% of legal; exemptions for mech/stair/balcony (capped to legal FAR) and roof caps; basement from excavation ratio.
+- Sales: basement excluded from saleable; parking from 65% of basement ping and parkSize; first floor takes 65% when multiple stories; land efficiency = saleable / site ping.
+- Costs: build cost per ping; legal cost per legal m2; design/fund/license/review/bonus/pipes/cadastral/rights/stamp/trust; interest from build cost and loan years; management (HR/sales/risk) at 5% each.
+- Revenue: parking + 1F price + upper-floor price.
+- Equity: cash back from selling parks/upper floors; return area after public ratio; exchange ratio vs original indoor ping.
 
-### 工具模組
-- [計算邏輯](./06-計算邏輯.md) - `utils/calculations.ts` 核心計算引擎
-- [國際化](./07-國際化.md) - `utils/i18n.ts` 多語言支援
+## Commands
+- npm install  - install dependencies
+- npm run dev  - start Vite dev server (http://localhost:5173)
+- npm run build  - production build to dist/
+- npm run preview  - serve the build locally
+- npm run deploy  - build then wrangler pages deploy dist (Cloudflare auth required)
 
-### UI 組件
-- [輸入組件](./08-輸入組件.md) - `components/InputField.tsx` 表單輸入欄位
-- [結果儀表板](./09-結果儀表板.md) - `components/ResultsDashboard.tsx` 結果展示面板
+## Environment
+- .env.local for local secrets (e.g., GEMINI_API_KEY); file is gitignored.
 
-### 配置檔案
-- [配置檔案](./10-配置檔案.md) - `vite.config.ts`、`package.json`、`index.html` 等
-
-## 🚀 快速開始
-
-1. 安裝依賴：`npm install`
-2. 啟動開發伺服器：`npm run dev`
-3. 建置專案：`npm run build`
-
-## 📖 如何使用本文檔
-
-每個文檔都包含：
-- **檔案位置**：檔案在專案中的路徑
-- **功能說明**：該檔案的主要職責
-- **程式碼結構**：關鍵程式碼區塊的說明
-- **相關連結**：跳轉到相關檔案或程式碼區域
-
-在支援的編輯器中，您可以：
-- 點擊檔案路徑直接開啟檔案
-- 使用 `Ctrl+Click` (Windows) 或 `Cmd+Click` (Mac) 跳轉到程式碼定義
-
-## 🔗 相關資源
-
-- [專案 README](../README.md)
-- [Vite 官方文檔](https://vitejs.dev/)
-- [React 官方文檔](https://react.dev/)
-
----
-
-*最後更新：2024*
-
+## Notes
+- Extend InputState/TabCategory in types.ts for new fields; keep i18n keys in utils/i18n.ts in sync.
+- Do not edit dist/ by hand.
